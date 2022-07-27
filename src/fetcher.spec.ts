@@ -1,18 +1,17 @@
 import {Fetcher} from './fetcher';
-import axios from 'axios';
-jest.mock('axios');
 
 describe('Fetcher Test', () => {
   const fetcher = new Fetcher();
   it('It should work as a paralel and return as a text', async () => {
-    (axios.get as jest.MockedFunction<typeof axios.get>).mockResolvedValue({
-      data: {
+    jest.spyOn(fetcher, 'sendRequest').mockResolvedValue(
+      JSON.stringify({
         userId: 1,
         id: 1,
         title: 'delectus aut autem',
         completed: false,
-      },
-    });
+      })
+    );
+
     const testResponse: string[] = await fetcher.runInParallel(
       [
         'https://jsonplaceholder.typicode.com/todos/1',
@@ -31,34 +30,8 @@ describe('Fetcher Test', () => {
   });
 
   it('When it receive empty array', async () => {
-    (axios.get as jest.MockedFunction<typeof axios.get>).mockResolvedValue({});
+    jest.spyOn(fetcher, 'sendRequest').mockResolvedValue({});
     const testResponse: string[] = await fetcher.runInParallel([], 2);
     expect(testResponse).toEqual([]);
-  });
-
-  it('When error case appare', async () => {
-    (axios.get as jest.MockedFunction<typeof axios.get>)
-      .mockResolvedValueOnce({
-        data: {
-          userId: 1,
-        },
-      })
-      .mockRejectedValueOnce('Error')
-      .mockResolvedValue({
-        data: {
-          userId: 3,
-        },
-      });
-    const testResponse: string[] = await fetcher.runInParallel(
-      [
-        'https://jsonplaceholder.typicode.com/todos/1',
-        'https://jsonplaceholder.typicode.com/todos/2',
-        'https://jsonplaceholder.typicode.com/todos/3',
-      ],
-      2
-    );
-    expect(JSON.parse(testResponse[0]).userId).toEqual(1);
-    expect(JSON.parse(testResponse[1]).userId).toBeUndefined();
-    expect(JSON.parse(testResponse[2]).userId).toEqual(3);
   });
 });
